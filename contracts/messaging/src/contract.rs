@@ -39,7 +39,7 @@ pub fn execute(
     }
 }
 
-pub fn try_respond(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError> {
+pub fn try_respond(deps: DepsMut, info: MessageInfo, msg: ExecuteMsg) -> Result<Response, ContractError> {
     // STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
     //     state.count += 1;
     //     Ok(state)
@@ -48,6 +48,7 @@ pub fn try_respond(deps: DepsMut, info: MessageInfo) -> Result<Response, Contrac
         if(RESPONSE.may_load(deps.storage, &add_key)?).is_some() {
             return Err(ContractError::AlreadyResponded {  });
         }
+        RESPONSE.save(deps.storage, &add_key, Response{ text: msg.})
     Ok(Response::default())
 }
 
