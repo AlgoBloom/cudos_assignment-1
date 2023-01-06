@@ -1,3 +1,4 @@
+use cosmwasm_std::{Addr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -22,6 +23,7 @@ pub enum QueryMsg {
 
 // We define a custom struct for each query response
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct CountResponse {
-    pub count: i32,
+pub struct ReplyInfo {
+    pub add: Addr,
+    pub response: String,
 }
