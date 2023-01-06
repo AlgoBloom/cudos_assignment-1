@@ -21,4 +21,4 @@ pub struct Response {
     pub text: String
 }
 
-pub const Responses: Map<&Addr, Response> = Map::new("response");
+pub const RESPONSE: Map<&Addr, Response> = Map::new("response");

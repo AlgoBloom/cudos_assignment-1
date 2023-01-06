@@ -4,7 +4,7 @@ use cosmwasm_std::{
 
 use crate::error::ContractError;
 use crate::msg::{CountResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Config, CONFIG};
+use crate::state::{Config, CONFIG, Response, RESPONSE };
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors
@@ -19,12 +19,13 @@ pub fn instantiate(
         owner: info.sender,
         greeting: msg.greeting
     };
-    CONFIG.save(&deps, &initializer);
+    CONFIG.save(deps.storage, &initializer);
 
     Ok(Response::default())
 }
 
 // And declare a custom Error variant for the ones where you will want to make use of it
+// execute calls can change state of SC
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
@@ -33,17 +34,20 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Increment {} => try_increment(deps),
-        ExecuteMsg::Reset { count } => try_reset(deps, info, count),
+        ExecuteMsg::Reply { text } => try_increment(deps),
+        ExecuteMsg::Reset { text } => try_reset(deps, info, count),
     }
 }
 
-pub fn try_increment(deps: DepsMut) -> Result<Response, ContractError> {
-    STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
-        state.count += 1;
-        Ok(state)
-    })?;
-
+pub fn try_respond(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError> {
+    // STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
+    //     state.count += 1;
+    //     Ok(state)
+    // })?;
+        let add_key = info.sender;
+        if(RESPONSE.may_load(deps.storage, &add_key)?).is_some() {
+            return Err(ContractError::AlreadyResponded {  });
+        }
     Ok(Response::default())
 }
 
