@@ -55,7 +55,7 @@ pub fn try_respond(deps: DepsMut, info: MessageInfo, text: String) -> Result<Res
 pub fn try_reset(deps: DepsMut, info: MessageInfo, text: String) -> Result<Response, ContractError> {
     CONFIG.update(deps.storage, |mut config| -> Result<_, ContractError> {
         if info.sender != config.owner {
-            return Err(ContractError::Unauthorized {  })
+            return Err(ContractError::Unauthorized {})
         }
         config.greeting = text;
     })?
