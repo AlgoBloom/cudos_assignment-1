@@ -2,6 +2,8 @@ use cosmwasm_std::{Addr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::state::Reply;
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     // pub count: i32,
@@ -25,5 +27,10 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ReplyInfo {
     pub add: Addr,
-    pub response: String,
+    pub response: Reply,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Replies {
+    pub ReplyList : Vec<ReplyInfo>
 }

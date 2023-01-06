@@ -1,9 +1,9 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Order,
 };
 
 use crate::error::ContractError;
-use crate::msg::{CountResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, Replies, ReplyInfo};
 use crate::state::{Config, CONFIG, Reply, REPLY };
 
 // Note, you can use StdResult in some functions where you do not
@@ -65,13 +65,17 @@ pub fn try_reset(deps: DepsMut, info: MessageInfo, text: String) -> Result<Respo
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetCount {} => to_binary(&query_count(deps)?),
+        QueryMsg::GetReplies {} => to_binary(&query_count(deps)?),
     }
 }
 
-fn query_count(deps: Deps) -> StdResult<CountResponse> {
-    let state = STATE.load(deps.storage)?;
-    Ok(CountResponse { count: state.count })
+fn get_replies(deps: Deps) -> StdResult<Replies> {
+    let all_replies: StdResult<Vec<_>> = REPLY
+    .range(deps.storage, None, None, Order::Ascending)
+    .map(|item| item.map(|(add, response)| ReplyInfo { add, response}))
+    .collect();
+
+    all_replies.map(|replies| Replies { ReplyList: replies })
 }
 
 #[cfg(test)]
