@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::Addr;
-use cw_storage_plus::Item;
+use cw_storage_plus::{Item, Map};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 // pub struct State {
@@ -14,4 +14,11 @@ pub struct Config {
     pub greeting: String
 }
 
-pub const STATE: Item<State> = Item::new("state");
+// pub const STATE: Item<State> = Item::new("state");
+pub const CONFIG: Item<Config> = Item::new("config");
+
+pub struct Replies {
+    pub text: String
+}
+
+pub const Responses: Map<&Addr, Response> = Map::new("response");
