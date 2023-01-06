@@ -4,7 +4,7 @@ use cosmwasm_std::{
 
 use crate::error::ContractError;
 use crate::msg::{CountResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{State, STATE};
+use crate::state::{Config, CONFIG};
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors
@@ -15,11 +15,11 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    let state = State {
-        count: msg.count,
+    let initializer = Config{
         owner: info.sender,
+        greeting: msg.greeting
     };
-    STATE.save(deps.storage, &state)?;
+    CONFIG.save(&deps, &initializer);
 
     Ok(Response::default())
 }
