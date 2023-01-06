@@ -35,7 +35,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Reply { text } => try_respond(deps, info, text),
-        ExecuteMsg::Reset { text } => try_reset(deps, info, count),
+        ExecuteMsg::Reset { text } => try_reset(deps, info, text),
     }
 }
 
@@ -53,13 +53,12 @@ pub fn try_respond(deps: DepsMut, info: MessageInfo, text: String) -> Result<Res
 }
 
 pub fn try_reset(deps: DepsMut, info: MessageInfo, text: String) -> Result<Response, ContractError> {
-    STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
-        if info.sender != state.owner {
-            return Err(ContractError::Unauthorized {});
+    CONFIG.update(deps.storage, |mut config| -> Result<_, ContractError> {
+        if info.sender != config.owner {
+            return Err(ContractError::Unauthorized {  })
         }
-        state.count = count;
-        Ok(state)
-    })?;
+        config.greeting = text;
+    })?
     Ok(Response::default())
 }
 
