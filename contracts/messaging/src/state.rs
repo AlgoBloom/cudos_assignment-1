@@ -18,8 +18,8 @@ pub struct Config {
 pub const CONFIG: Item<Config> = Item::new("config");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct Response {
+pub struct Reply {
     pub text: String
 }
 
-pub const RESPONSE: Map<&Addr, Response> = Map::new("response");
+pub const REPLY: Map<&Addr, Reply> = Map::new("reply");

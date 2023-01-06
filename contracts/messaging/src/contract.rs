@@ -4,7 +4,7 @@ use cosmwasm_std::{
 
 use crate::error::ContractError;
 use crate::msg::{CountResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Config, CONFIG, Response, RESPONSE };
+use crate::state::{Config, CONFIG, Reply, REPLY };
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors
@@ -34,25 +34,25 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Reply { text } => try_increment(deps),
+        ExecuteMsg::Reply { text } => try_respond(deps, info, text),
         ExecuteMsg::Reset { text } => try_reset(deps, info, count),
     }
 }
 
-pub fn try_respond(deps: DepsMut, info: MessageInfo, msg: ExecuteMsg) -> Result<Response, ContractError> {
+pub fn try_respond(deps: DepsMut, info: MessageInfo, text: String) -> Result<Response, ContractError> {
     // STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
     //     state.count += 1;
     //     Ok(state)
     // })?;
         let add_key = info.sender;
-        if(RESPONSE.may_load(deps.storage, &add_key)?).is_some() {
+        if(REPLY.may_load(deps.storage, &add_key)?).is_some() {
             return Err(ContractError::AlreadyResponded {  });
         }
-        RESPONSE.save(deps.storage, &add_key, Response{ text: msg.})
+        REPLY.save(deps.storage, &add_key, &Reply{ text: text})?;
     Ok(Response::default())
 }
 
-pub fn try_reset(deps: DepsMut, info: MessageInfo, count: i32) -> Result<Response, ContractError> {
+pub fn try_reset(deps: DepsMut, info: MessageInfo, text: String) -> Result<Response, ContractError> {
     STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
         if info.sender != state.owner {
             return Err(ContractError::Unauthorized {});
