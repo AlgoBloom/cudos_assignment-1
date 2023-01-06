@@ -1,15 +1,23 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "ExecuteMsg",
-  "anyOf": [
+  "oneOf": [
     {
       "type": "object",
       "required": [
-        "increment"
+        "reply"
       ],
       "properties": {
-        "increment": {
-          "type": "object"
+        "reply": {
+          "type": "object",
+          "required": [
+            "text"
+          ],
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
         }
       },
       "additionalProperties": false
@@ -23,12 +31,11 @@
         "reset": {
           "type": "object",
           "required": [
-            "count"
+            "text"
           ],
           "properties": {
-            "count": {
-              "type": "integer",
-              "format": "int32"
+            "text": {
+              "type": "string"
             }
           }
         }
