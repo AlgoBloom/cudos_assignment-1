@@ -1,1 +1,0 @@
-6b95d56793d1d3e59aeaf7c453b8df2655e0c59ebc7c193ea347aa7513dfc1da  target/wasm32-unknown-unknown/release/messaging.wasm

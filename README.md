@@ -1,3 +1,0 @@
-Kudos assignment 1.
-
-Contract deployed on testnet at cudos1qlf986ammwy2ppyxl9s6hw43wk6swgtfat6ufc5sw05hywrxfzcs6j9rum
