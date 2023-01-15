@@ -20,9 +20,9 @@ function CreateCosmosApp({ Component, pageProps }: AppProps) {
     },
     signingCosmwasm: (chain: Chain) => {
       switch (chain.chain_name) {
-        case 'cosmwasmtestnet':
+        case 'cudostestnet':
           return {
-            gasPrice: GasPrice.fromString('0.0025umlga'),
+            gasPrice: GasPrice.fromString('250acudos'),
           };
       }
     },
@@ -36,9 +36,8 @@ function CreateCosmosApp({ Component, pageProps }: AppProps) {
         wallets={[...keplrWallets, ...cosmostationWallets, ...leapWallets]}
         signerOptions={signerOptions}
         endpointOptions={{
-          cosmwasmtestnet: {
-            rpc: ['https://rpc.malaga-420.cosmwasm.com/'],
-            rest: ['https://api.malaga-420.cosmwasm.com']
+          cudostestnet: {
+            rpc: ['https://sentry1.gcp-uscentral1.cudos.org:36657/']
           },
         }}
       >
