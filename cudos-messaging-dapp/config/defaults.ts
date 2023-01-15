@@ -1,4 +1,4 @@
-import { assets } from 'chain-registry';
+import { assets, chains } from 'chain-registry';
 import { AssetList, Asset } from '@chain-registry/types';
 
 export const chainName = 'cudostestnet';

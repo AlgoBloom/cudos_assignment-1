@@ -27,7 +27,7 @@ import {
   HackCw20,
 } from "../components";
 import { useHackCw20Balance } from "../hooks/use-hack-cw20-balance";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MessagingQueryClient } from "../codegen/Messaging.client";
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 
@@ -41,8 +41,8 @@ export default function Home() {
   const { colorMode, toggleColorMode } = useColorMode();
   const { walletStatus } = useWallet();
   const { balance } = useHackCw20Balance(cw20ContractAddress);
+  const[greeting, setGreeting] = useState<GetGreetingResponse>();
 
-  const[greeting, setGreeting] = useState('');
   const messagingQueryClient = async () => {
     const cosmwasmclient = await CosmWasmClient.connect(chainEndpoint);
     return new MessagingQueryClient(cosmwasmclient, messagingContractAddress);
@@ -50,8 +50,13 @@ export default function Home() {
 
 
   const getAndSetGreeting = async () => {
-    const greeting
+    setGreeting(await (await messagingQueryClient()).getGreeting());
+    console.log(greeting);
   }
+
+  useEffect(() => {
+    getAndSetGreeting();
+  }, [])
 
   return (
     <Container maxW="5xl" py={10}>

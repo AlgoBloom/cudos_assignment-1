@@ -1,10 +1,10 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Order,
+    entry_point,  DepsMut, Env, MessageInfo, Response,  Addr, Binary, StdResult, Deps, to_binary, Order,
 };
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, Replies, ReplyInfo};
-use crate::state::{Config, CONFIG, Reply, REPLY };
+use crate::msg::{ExecuteMsg, InstantiateMsg, self, QueryMsg, ReplyResponse, ReplyInfo};
+use crate::state::{Config, CONFIG, Reply, REPLIES};
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors
@@ -15,17 +15,16 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    let initializer = Config{
+    let config = Config {       
         owner: info.sender,
-        greeting: msg.greeting
+        message: msg.text,
     };
-    CONFIG.save(deps.storage, &initializer);
+    CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::default())
 }
 
 // And declare a custom Error variant for the ones where you will want to make use of it
-// execute calls can change state of SC
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
@@ -34,118 +33,149 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Reply { text } => try_respond(deps, info, text),
-        ExecuteMsg::Reset { text } => try_reset(deps, info, text),
+        ExecuteMsg::Respond { response } => try_respond(deps, info, response),
+        ExecuteMsg::Reset { text } => try_reset(deps, info, text ),
     }
 }
 
-pub fn try_respond(deps: DepsMut, info: MessageInfo, text: String) -> Result<Response, ContractError> {
-    // STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
-    //     state.count += 1;
-    //     Ok(state)
-    // })?;
-        let add_key = info.sender;
-        if(REPLY.may_load(deps.storage, &add_key)?).is_some() {
-            return Err(ContractError::AlreadyResponded {  });
-        }
-        REPLY.save(deps.storage, &add_key, &Reply{ text: text})?;
+pub fn try_respond(
+    deps: DepsMut, 
+    info: MessageInfo, 
+    response: String 
+) -> Result<Response, ContractError> {
+    //check if the user has replied in the past, if may_load is none, load, otherwise return already signed error
+    let add_key: Addr = info.sender;
+    if (REPLIES.may_load(deps.storage, &add_key.clone())?).is_some() {
+        return Err(ContractError::AlreadyResponded {  });
+    }
+    // let addKey = info.sender;
+    let resp = Reply { text: response}; 
+    REPLIES.save(deps.storage, &add_key, &resp)?;
     Ok(Response::default())
 }
 
 pub fn try_reset(deps: DepsMut, info: MessageInfo, text: String) -> Result<Response, ContractError> {
+    //updating an item is done with a closure (anonymous function)
+    //the closure includes read and write and returns the newly saved value
     CONFIG.update(deps.storage, |mut config| -> Result<_, ContractError> {
         if info.sender != config.owner {
-            return Err(ContractError::Unauthorized {})
+            return Err(ContractError::Unauthorized {});
         }
-        config.greeting = text;
+        config.message = text;
         Ok(config)
     })?;
     Ok(Response::default())
 }
 
+
 #[entry_point]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-        QueryMsg::GetReplies {} => to_binary(&get_replies(deps)?),
-    }
+pub fn query(
+    deps: Deps, 
+    _env: Env,
+    msg: msg::QueryMsg
+    ) -> StdResult<Binary> {
+        match msg {
+            QueryMsg::GetReplies {  } => to_binary(&get_replies(deps)?),
+            QueryMsg::GetGreeting {  } => to_binary(&get_greeting(deps)?)
+        }
 }
 
-fn get_replies(deps: Deps) -> StdResult<Replies> {
-    let all_replies: StdResult<Vec<_>> = REPLY
+pub fn get_greeting (deps: Deps) -> StdResult<String> {
+    let config= CONFIG.may_load(deps.storage)?.unwrap();
+    Ok(config.message) 
+}
+
+pub fn get_replies(deps: Deps) -> StdResult<ReplyResponse> {
+    let all: StdResult<Vec<_>> = REPLIES
     .range(deps.storage, None, None, Order::Ascending)
-    .map(|item| item.map(|(add, response)| ReplyInfo { add, response}))
+    .map(|item|  item.map(|(addr, reply)| ReplyInfo{ addr, reply}))
     .collect();
-
-    all_replies.map(|replies| Replies { ReplyList: replies })
+    
+    all.map(|replies| ReplyResponse { replies } )
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use cosmwasm_std::testing::{mock_dependencies, mock_dependencies_with_balance, mock_env, mock_info};
-//     use cosmwasm_std::{coins, from_binary};
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info,};
+    use cosmwasm_std::{coins, from_binary};
 
-//     #[test]
-//     fn proper_initialization() {
-//         let mut deps = mock_dependencies();
+    #[test]
+    fn proper_initialization() {
+        let mut deps = mock_dependencies();
+        let msg = InstantiateMsg { text: "Hello world!".to_string()};
+        let info = mock_info("owner",  &coins(1000, "acudos"));
 
-//         let msg = InstantiateMsg { count: 17 };
-//         let info = mock_info("creator", &coins(1000, "earth"));
+        // we can just call .unwrap() to assert this was a success
+        let init = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+        assert_eq!(0, init.messages.len());
 
-//         // we can just call .unwrap() to assert this was a success
-//         let res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
-//         assert_eq!(0, res.messages.len());
+        // it worked, let's query the state
+        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetGreeting {  }).unwrap();
+        let value : String= from_binary(&res).unwrap();
+        assert_eq!("Hello world!", value);
+    }
 
-//         // it worked, let's query the state
-//         let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-//         let value: CountResponse = from_binary(&res).unwrap();
-//         assert_eq!(17, value.count);
-//     }
+    #[test]
+    fn respond() {
+        let mut deps = mock_dependencies();
+        let msg = InstantiateMsg { text: "Hello world!".to_string()};
+        let info = mock_info("owner",  &coins(1000, "acudos"));
+        let _init = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+        
+        //should save the response to storage
+        let info = mock_info("responder1", &coins(0, "acudos"));
+        let msg = ExecuteMsg::Respond { response: "thanks for the warm welcome.".to_string() } ;
+        let _res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
 
-//     #[test]
-//     fn increment() {
-//         let mut deps = mock_dependencies_with_balance(&coins(2, "token"));
+        //querying the response should return the greeting
+        let expected_info = mock_info("responder1", &coins(0, "acudos"));
+        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetReplies {  }).unwrap();
+        let value: ReplyResponse = from_binary(&res).unwrap();
+        let expected_resp_value:ReplyResponse = ReplyResponse {
+            replies: vec![ReplyInfo{addr: expected_info.sender, reply: Reply { text: "thanks for the warm welcome.".to_string() } }]
+        };
+        assert_eq!(expected_resp_value, value);  
+    
+        //should fail when an addr tries responding more than once
+        let info = mock_info("responder1", &coins(0, "acudos"));
+        let msg = ExecuteMsg::Respond { response: "thanks for the warm welcome.".to_string() } ;
+        let res = execute(deps.as_mut(), mock_env(), info, msg);
+        match res {
+            Err(ContractError::AlreadyResponded {}) => {}
+            _ => panic!("Must return already responded error"),
+        }
+        
+    }
 
-//         let msg = InstantiateMsg { count: 17 };
-//         let info = mock_info("creator", &coins(2, "token"));
-//         let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+    #[test]
+    fn reset() {
+        let mut deps = mock_dependencies();
+        let msg = InstantiateMsg { text: "Hello world!".to_string()};
+        let info = mock_info("owner",  &coins(1000, "acudos"));
+        let _init = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+        
+        //should fail to reset and return unauthorised
+        let unauth_info = mock_info("unauth", &coins(0, "acudos"));
+        let msg = ExecuteMsg::Reset { text: "How can I help you today?".to_string() } ;
+        let res = execute(deps.as_mut(), mock_env(), unauth_info, msg);
+        match res {
+            Err(ContractError::Unauthorized {}) => {}
+            _ => panic!("Must return unauthorized error"),
+        }
 
-//         // beneficiary can release it
-//         let info = mock_info("anyone", &coins(2, "token"));
-//         let msg = ExecuteMsg::Increment {};
-//         let _res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
+        //should allow owner to reset 
+        let unauth_info = mock_info("owner", &coins(0, "acudos"));
+        let msg = ExecuteMsg::Reset { text: "How can I help you today?".to_string() } ;
+        let _res = execute(deps.as_mut(), mock_env(), unauth_info, msg).unwrap();
 
-//         // should increase counter by 1
-//         let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-//         let value: CountResponse = from_binary(&res).unwrap();
-//         assert_eq!(18, value.count);
-//     }
+        // it worked, let's query the state
+        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetGreeting {  }).unwrap();
+        let value : String= from_binary(&res).unwrap();
+        assert_eq!("How can I help you today?", value);
 
-//     #[test]
-//     fn reset() {
-//         let mut deps = mock_dependencies_with_balance(&coins(2, "token"));
+       
+        
+    }
 
-//         let msg = InstantiateMsg { count: 17 };
-//         let info = mock_info("creator", &coins(2, "token"));
-//         let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
-
-//         // beneficiary can release it
-//         let unauth_info = mock_info("anyone", &coins(2, "token"));
-//         let msg = ExecuteMsg::Reset { count: 5 };
-//         let res = execute(deps.as_mut(), mock_env(), unauth_info, msg);
-//         match res {
-//             Err(ContractError::Unauthorized {}) => {}
-//             _ => panic!("Must return unauthorized error"),
-//         }
-
-//         // only the original creator can reset the counter
-//         let auth_info = mock_info("creator", &coins(2, "token"));
-//         let msg = ExecuteMsg::Reset { count: 5 };
-//         let _res = execute(deps.as_mut(), mock_env(), auth_info, msg).unwrap();
-
-//         // should now be 5
-//         let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-//         let value: CountResponse = from_binary(&res).unwrap();
-//         assert_eq!(5, value.count);
-//     }
-// }
+}
