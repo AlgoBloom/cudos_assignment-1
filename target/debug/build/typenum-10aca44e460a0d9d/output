@@ -1,0 +1,2 @@
+cargo:rustc-env=TYPENUM_BUILD_CONSTS=/Users/algobloom/Workspace/cudos/target/debug/build/typenum-10aca44e460a0d9d/out/consts.rs
+cargo:rustc-env=TYPENUM_BUILD_OP=/Users/algobloom/Workspace/cudos/target/debug/build/typenum-10aca44e460a0d9d/out/op.rs
