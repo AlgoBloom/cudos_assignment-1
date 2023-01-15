@@ -2,7 +2,7 @@ const bre = require('cudos-blast')
 
 async function main() {
   const [alice, bob] = await bre.getSigners()
-  const contract = await bre.getContractFromAddress('cudos1wug8sewp6cedgkmrmvhl3lf3tulagm9hnvy8p0rppz9yjw0g4wtqnj28h4')
+  const contract = await bre.getContractFromAddress('cudos14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9strccpl')
 
   const QUERY_GET_COUNT = { get_count: {} }
   let count = await contract.query(QUERY_GET_COUNT, alice)
